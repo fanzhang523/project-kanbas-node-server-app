@@ -6,8 +6,6 @@ export default function UserRoutes(app) {
     res.json(user);
   };
 
-
-
   const findAllUsers = async (req, res) => {
     const { role, name } = req.query;
     if (role) {
@@ -39,23 +37,38 @@ export default function UserRoutes(app) {
 
   const updateUser = async (req, res) => {
     const { userId } = req.params;
+    const { role } = req.body;
+  
+    if (role && !["USER", "ADMIN", "FACULTY", "STUDENT"].includes(role)) {
+      return res.status(400).json({ message: "Invalid role." });
+    }
+  
     const status = await dao.updateUser(userId, req.body);
     res.json(status);
   };
+  
 
 
   const signup = async (req, res) => {
-    const user = await dao.findUserByUsername(req.body.username);
+    console.log("Received role:", req.body.role);  
+
+    const { username, role } = req.body;
+    
+    if (!role || !["USER", "ADMIN", "FACULTY", "STUDENT"].includes(role)) {
+        return res.status(400).json({ message: "Invalid or missing role." });
+    }
+
+    const user = await dao.findUserByUsername(username);
     if (user) {
-      res.status(400).json(
-        { message: "Username already taken" });
-      return;
+        return res.status(400).json({ message: "Username already taken" });
     }
     const currentUser = await dao.createUser(req.body);
     req.session["currentUser"] = currentUser;
     res.json(currentUser);
+};
 
-  };
+  
+  
 
 
   const signin = async (req, res) => {
